@@ -1,0 +1,3349 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Hive & NoSQL for Data Warehousing</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --indigo: #6366f1;
+        --indigo-dark: #4f46e5;
+        --indigo-soft: #eef2ff;
+        --pink: #ec4899;
+        --pink-soft: #fdf2f8;
+        --ink: #0f172a;
+        --body: #475569;
+        --muted: #94a3b8;
+        --line: #e8ecf4;
+        --shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
+
+        --t-title: clamp(3rem, min(10vw, 16vh), 5rem);
+        --t-huge: clamp(2.6rem, min(8vw, 14vh), 6rem);
+        --t-h: clamp(2rem, min(5.2vw, 8.6vh), 4.5rem);
+        --t-body: clamp(0.98rem, min(1.7vw, 2.9vh), 1.4rem);
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      html,
+      body {
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        font-family:
+          Inter,
+          system-ui,
+          -apple-system,
+          "Segoe UI",
+          Helvetica,
+          sans-serif;
+        color: var(--body);
+        background: #f8f9ff;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      #deck {
+        position: fixed;
+        inset: 0;
+        overflow: hidden;
+      }
+
+      .slide {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: clamp(48px, 8vh, 88px) clamp(20px, 6vw, 96px)
+          clamp(80px, 13vh, 124px);
+        overflow: hidden;
+        opacity: 0;
+        visibility: hidden;
+        transform: translateX(48px);
+        transition:
+          opacity 0.45s cubic-bezier(0.22, 1, 0.36, 1),
+          transform 0.55s cubic-bezier(0.22, 1, 0.36, 1),
+          visibility 0s linear 0.45s;
+      }
+      .slide.past {
+        transform: translateX(-48px);
+      }
+      .slide.active {
+        opacity: 1;
+        visibility: visible;
+        transform: none;
+        transition:
+          opacity 0.45s cubic-bezier(0.22, 1, 0.36, 1),
+          transform 0.55s cubic-bezier(0.22, 1, 0.36, 1),
+          visibility 0s;
+      }
+
+      .bg-a {
+        background: linear-gradient(135deg, #f8f9ff 0%, #eef1ff 100%);
+      }
+      .bg-b {
+        background: linear-gradient(135deg, #fef7fb 0%, #f1f0ff 100%);
+      }
+      .bg-c {
+        background: linear-gradient(
+          160deg,
+          #f5f7ff 0%,
+          #ffffff 55%,
+          #fdf2f8 100%
+        );
+      }
+      .bg-title {
+        background: linear-gradient(
+          135deg,
+          #4f46e5 0%,
+          #3730a3 48%,
+          #1e1b4b 100%
+        );
+      }
+      .bg-final {
+        background: linear-gradient(
+          135deg,
+          #6366f1 0%,
+          #4f46e5 50%,
+          #312e81 100%
+        );
+      }
+
+      .slide::before {
+        content: "";
+        position: absolute;
+        width: 44vmax;
+        height: 44vmax;
+        border-radius: 50%;
+        background: var(--indigo);
+        opacity: 0.05;
+        right: -12vmax;
+        top: -18vmax;
+      }
+      .slide:nth-child(even)::before {
+        right: auto;
+        top: auto;
+        left: -14vmax;
+        bottom: -20vmax;
+        background: var(--pink);
+      }
+      .slide::after {
+        content: "";
+        position: absolute;
+        left: -10%;
+        top: 80%;
+        width: 120%;
+        height: 1px;
+        background: var(--indigo);
+        opacity: 0.14;
+        transform: rotate(-7deg);
+      }
+      .slide.dark::before {
+        background: #fff;
+        opacity: 0.06;
+      }
+      .slide.dark::after {
+        background: #fff;
+        opacity: 0.16;
+      }
+
+      .inner {
+        position: relative;
+        z-index: 1;
+        width: calc(100% + 48px);
+        max-width: 1248px;
+        max-height: 100%;
+        margin: -24px;
+        padding: 24px;
+        display: flex;
+        flex-direction: column;
+        gap: clamp(14px, 3vh, 34px);
+        overflow-y: auto;
+        scrollbar-width: none;
+      }
+      .inner::-webkit-scrollbar {
+        display: none;
+      }
+      .inner.center {
+        align-items: center;
+        text-align: center;
+      }
+
+      .split {
+        display: grid;
+        grid-template-columns: repeat(12, 1fr);
+        column-gap: clamp(20px, 3.4vw, 56px);
+        align-items: center;
+      }
+      .l6 {
+        grid-column: span 6;
+      }
+      .r6 {
+        grid-column: span 6;
+      }
+      .l7 {
+        grid-column: span 7;
+      }
+      .r5 {
+        grid-column: span 5;
+      }
+      .l5 {
+        grid-column: span 5;
+      }
+      .r7 {
+        grid-column: span 7;
+      }
+      .l4 {
+        grid-column: span 4;
+      }
+      .r8 {
+        grid-column: span 8;
+      }
+      .col {
+        display: flex;
+        flex-direction: column;
+        gap: clamp(12px, 2.6vh, 26px);
+      }
+
+      .head {
+        display: flex;
+        flex-direction: column;
+        gap: clamp(8px, 1.8vh, 16px);
+      }
+      .kicker-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .center .kicker-row {
+        justify-content: center;
+      }
+      .kicker {
+        font-size: 0.8rem;
+        font-weight: 600;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--indigo-dark);
+      }
+      h2 {
+        font-family: Poppins, Inter, system-ui, sans-serif;
+        font-size: var(--t-h);
+        font-weight: 700;
+        line-height: 1.08;
+        letter-spacing: -0.02em;
+        color: var(--ink);
+        text-wrap: balance;
+        max-width: 18ch;
+      }
+      .center h2 {
+        max-width: 22ch;
+      }
+      p,
+      li {
+        font-size: var(--t-body);
+        line-height: 1.5;
+        font-weight: 500;
+      }
+      b,
+      strong {
+        color: var(--ink);
+        font-weight: 700;
+      }
+      .accent {
+        color: var(--indigo);
+      }
+
+      .quote {
+        border-left: 5px solid var(--indigo);
+        padding: 4px 0 4px 20px;
+        font-style: italic;
+        font-size: clamp(1.1rem, min(2.1vw, 3.3vh), 1.75rem);
+        font-weight: 500;
+        line-height: 1.4;
+        color: #1e293b;
+        text-align: left;
+      }
+
+      .ic {
+        width: 24px;
+        height: 24px;
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        flex: none;
+      }
+      .chip {
+        width: 44px;
+        height: 44px;
+        border-radius: 14px;
+        display: grid;
+        place-items: center;
+        background: var(--indigo-soft);
+        color: var(--indigo);
+        flex: none;
+        transition: transform 0.2s ease;
+      }
+      .chip:hover {
+        transform: scale(1.08);
+      }
+      .chip.pink {
+        background: var(--pink-soft);
+        color: var(--pink);
+      }
+      .chip.lg {
+        width: clamp(46px, 7vh, 60px);
+        height: clamp(46px, 7vh, 60px);
+        border-radius: 16px;
+      }
+      .chip.lg .ic {
+        width: 28px;
+        height: 28px;
+      }
+      .dark .chip {
+        background: rgba(255, 255, 255, 0.14);
+        color: #fff;
+      }
+      .dark .kicker {
+        color: rgba(255, 255, 255, 0.8);
+      }
+
+      .card {
+        background: #fff;
+        border-radius: 20px;
+        box-shadow: var(--shadow);
+        padding: clamp(14px, 2.6vh, 28px) clamp(16px, 2vw, 28px);
+        transition:
+          transform 0.25s ease,
+          box-shadow 0.25s ease;
+      }
+      .card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 16px 44px rgba(0, 0, 0, 0.12);
+      }
+      .card.row {
+        display: flex;
+        align-items: center;
+        gap: 18px;
+      }
+      .card.col {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .card .tag {
+        font-size: 0.78rem;
+        font-weight: 600;
+        color: var(--muted);
+        display: block;
+        margin-bottom: 2px;
+      }
+      .card .ttl {
+        font-family: Poppins, Inter, sans-serif;
+        font-weight: 600;
+        font-size: clamp(1.1rem, min(2vw, 3.2vh), 1.55rem);
+        color: var(--ink);
+        line-height: 1.25;
+      }
+      .card .sub {
+        font-size: clamp(0.92rem, min(1.4vw, 2.4vh), 1.1rem);
+        color: var(--body);
+        font-weight: 500;
+      }
+
+      .grid2 {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: clamp(12px, 2vh, 20px);
+      }
+      .grid3 {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: clamp(12px, 2vw, 20px);
+      }
+      .grid4 {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: clamp(12px, 2vw, 22px);
+      }
+
+      .pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        background: var(--indigo-soft);
+        color: var(--indigo-dark);
+        font-weight: 600;
+        font-size: clamp(0.98rem, min(1.7vw, 2.9vh), 1.3rem);
+        padding: 0.65em 1.3em;
+        border-radius: 999px;
+        align-self: flex-start;
+      }
+      .pill.pink {
+        background: var(--pink-soft);
+        color: #be185d;
+      }
+      .center .pill {
+        align-self: center;
+      }
+
+      .banner {
+        background: linear-gradient(90deg, var(--indigo), var(--indigo-dark));
+        color: #fff;
+        border-radius: 20px;
+        box-shadow: var(--shadow);
+        padding: clamp(14px, 2.6vh, 26px) 28px;
+        text-align: center;
+        font-family: Poppins, Inter, sans-serif;
+        font-weight: 600;
+        font-size: clamp(1.3rem, min(3vw, 4.8vh), 2.2rem);
+        letter-spacing: -0.01em;
+      }
+
+      .dark {
+        color: #fff;
+      }
+      .dark h2,
+      .dark b {
+        color: #fff;
+      }
+      .gridpat {
+        position: absolute;
+        inset: 0;
+        background-image:
+          linear-gradient(rgba(255, 255, 255, 0.07) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(255, 255, 255, 0.07) 1px, transparent 1px);
+        background-size: 56px 56px;
+        -webkit-mask-image: radial-gradient(
+          ellipse at center,
+          #000 15%,
+          transparent 72%
+        );
+        mask-image: radial-gradient(
+          ellipse at center,
+          #000 15%,
+          transparent 72%
+        );
+      }
+      .title-h {
+        font-family: Poppins, Inter, sans-serif;
+        font-size: var(--t-title);
+        font-weight: 800;
+        letter-spacing: -0.03em;
+        line-height: 1.02;
+        color: #fff;
+      }
+      .title-sub {
+        font-size: clamp(1.15rem, min(2.4vw, 4vh), 1.9rem);
+        font-weight: 500;
+        color: rgba(255, 255, 255, 0.88);
+      }
+      .foot {
+        font-size: 0.95rem;
+        font-weight: 500;
+        color: rgba(255, 255, 255, 0.7);
+        letter-spacing: 0.02em;
+      }
+      .title-wrap {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: clamp(14px, 3vh, 28px);
+      }
+
+      .qbox {
+        background: linear-gradient(135deg, var(--indigo-soft), #fff);
+        border: 2px solid var(--indigo);
+        border-radius: 20px;
+        padding: clamp(14px, 2.4vh, 24px) 26px;
+        font-family: Poppins, Inter, sans-serif;
+        font-weight: 600;
+        font-size: clamp(1.2rem, min(2.4vw, 3.8vh), 1.8rem);
+        color: var(--indigo-dark);
+        display: flex;
+        align-items: center;
+        gap: 14px;
+      }
+      .folder-vis {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: clamp(12px, 2.4vh, 22px);
+      }
+      .folder-big {
+        position: relative;
+        width: clamp(110px, 24vh, 210px);
+        height: clamp(110px, 24vh, 210px);
+        border-radius: 50%;
+        background: var(--indigo-soft);
+        color: var(--indigo);
+        display: grid;
+        place-items: center;
+      }
+      .folder-big .ic {
+        width: 50%;
+        height: 50%;
+        stroke-width: 1.5;
+      }
+      .badge-q {
+        position: absolute;
+        right: 2%;
+        top: 4%;
+        width: 36%;
+        height: 36%;
+        border-radius: 50%;
+        background: var(--pink);
+        color: #fff;
+        display: grid;
+        place-items: center;
+        box-shadow: 0 6px 18px rgba(236, 72, 153, 0.35);
+        font-family: Poppins, sans-serif;
+        font-weight: 700;
+        font-size: clamp(1.4rem, 5vh, 2.6rem);
+      }
+      .files {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 10px;
+      }
+      .file {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background: #fff;
+        border-radius: 12px;
+        box-shadow: var(--shadow);
+        padding: 8px 14px;
+        font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+        font-size: clamp(0.82rem, 1.3vw, 1rem);
+        color: var(--body);
+      }
+      .file .ic {
+        width: 18px;
+        height: 18px;
+        color: var(--indigo);
+      }
+
+      .huge {
+        font-family: Poppins, Inter, sans-serif;
+        font-size: var(--t-huge);
+        font-weight: 700;
+        letter-spacing: -0.03em;
+        line-height: 1.04;
+        color: var(--ink);
+        text-wrap: balance;
+      }
+      .bgicon {
+        position: absolute;
+        z-index: 0;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        width: min(70vh, 60vw);
+        height: min(70vh, 60vw);
+        color: var(--indigo);
+        opacity: 0.1;
+      }
+      .bgicon .ic {
+        width: 100%;
+        height: 100%;
+        stroke-width: 0.8;
+      }
+      .gray {
+        color: var(--muted);
+        font-size: clamp(1.1rem, min(2.2vw, 3.6vh), 1.7rem);
+        font-weight: 500;
+      }
+
+      .code {
+        background: #0f172a;
+        border-radius: 20px;
+        box-shadow: var(--shadow);
+        padding: clamp(16px, 3vh, 30px) clamp(20px, 2.4vw, 36px);
+        font-family:
+          ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+        font-size: clamp(0.98rem, min(1.9vw, 3.1vh), 1.5rem);
+        line-height: 1.95;
+        color: #e2e8f0;
+        overflow-x: auto;
+      }
+      .code.sm {
+        font-size: clamp(0.85rem, min(1.5vw, 2.6vh), 1.2rem);
+        line-height: 1.7;
+      }
+      .code .dots3 {
+        display: flex;
+        gap: 7px;
+        margin-bottom: 14px;
+      }
+      .code .dots3 i {
+        width: 11px;
+        height: 11px;
+        border-radius: 50%;
+        background: #334155;
+        display: block;
+      }
+      .code .tr {
+        color: #64748b;
+      }
+      .code .fd {
+        color: #a5b4fc;
+        font-weight: 600;
+      }
+      .code .kw {
+        color: #f472b6;
+      }
+      .code .st {
+        color: #86efac;
+      }
+      .code .cm {
+        color: #64748b;
+        font-style: italic;
+      }
+      .code .nu {
+        color: #fbbf24;
+      }
+
+      /* Clean code block layouts */
+      .tree,
+      .sql-block,
+      .json-block,
+      .log-block {
+        display: flex;
+        flex-direction: column;
+        gap: 3px;
+        font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+        line-height: 1.6;
+      }
+      .tree-root {
+        color: #e2e8f0;
+        font-weight: 600;
+      }
+      .tree-child {
+        color: #94a3b8;
+      }
+      .sql-line {
+        color: #e2e8f0;
+      }
+      .sql-line.indent {
+        padding-left: 2ch;
+      }
+      .json-line {
+        color: #e2e8f0;
+      }
+      .json-line.indent {
+        padding-left: 2ch;
+      }
+      .json-line.indent2 {
+        padding-left: 4ch;
+      }
+      .log-line {
+        color: #e2e8f0;
+        font-size: 0.92em;
+      }
+      .log-line.cm {
+        color: #64748b;
+        font-style: italic;
+      }
+
+      .panels {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: clamp(14px, 2.4vw, 32px);
+      }
+      .panel {
+        background: #fff;
+        border-radius: 20px;
+        box-shadow: var(--shadow);
+        overflow: hidden;
+      }
+      .ph {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: clamp(12px, 2.2vh, 20px) 24px;
+        color: #fff;
+        font-family: Poppins, Inter, sans-serif;
+        font-weight: 600;
+        font-size: clamp(1.2rem, min(2.2vw, 3.6vh), 1.7rem);
+      }
+      .ph.i {
+        background: var(--indigo);
+      }
+      .ph.p {
+        background: var(--pink);
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      th,
+      td {
+        text-align: left;
+        padding: clamp(9px, 1.9vh, 18px) 24px;
+        border-bottom: 1px solid var(--line);
+        font-size: clamp(1rem, min(1.7vw, 2.9vh), 1.35rem);
+      }
+      tr:last-child th,
+      tr:last-child td {
+        border-bottom: 0;
+      }
+      th {
+        width: 38%;
+        font-weight: 500;
+        color: var(--muted);
+      }
+      td {
+        font-weight: 700;
+        color: var(--ink);
+      }
+
+      .flow {
+        display: grid;
+        grid-template-columns: 1fr auto 1fr;
+        gap: clamp(12px, 2vw, 28px);
+        align-items: stretch;
+      }
+      .flow .card {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        padding: clamp(16px, 3vh, 32px) clamp(18px, 2.4vw, 32px);
+      }
+      .flow .ttl {
+        font-size: clamp(1.4rem, min(3vw, 4.8vh), 2.2rem);
+      }
+      .flow .what {
+        font-weight: 700;
+        color: var(--ink);
+        font-size: var(--t-body);
+      }
+      .arrow-chip {
+        align-self: center;
+        width: clamp(44px, 6vh, 60px);
+        height: clamp(44px, 6vh, 60px);
+        border-radius: 50%;
+        background: var(--indigo);
+        color: #fff;
+        display: grid;
+        place-items: center;
+        box-shadow: 0 8px 24px rgba(99, 102, 241, 0.35);
+      }
+
+      .duo {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: clamp(14px, 2.4vw, 32px);
+      }
+      .ccard {
+        border-radius: 20px;
+        box-shadow: var(--shadow);
+        padding: clamp(18px, 3.6vh, 40px) clamp(20px, 2.6vw, 40px);
+        color: #fff;
+        display: flex;
+        flex-direction: column;
+        gap: clamp(12px, 2.4vh, 22px);
+      }
+      .ccard.i {
+        background: linear-gradient(135deg, #6366f1, #4f46e5);
+      }
+      .ccard.p {
+        background: linear-gradient(135deg, #ec4899, #db2777);
+      }
+      .ccard h3 {
+        font-family: Poppins, Inter, sans-serif;
+        font-weight: 700;
+        font-size: clamp(1.4rem, min(2.8vw, 4.4vh), 2.1rem);
+        line-height: 1.2;
+      }
+      .ccard ul {
+        list-style: none;
+        display: flex;
+        flex-direction: column;
+        gap: clamp(8px, 1.8vh, 16px);
+      }
+      .ccard li {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        color: #fff;
+        font-weight: 600;
+        font-size: clamp(1.1rem, min(2vw, 3.4vh), 1.5rem);
+      }
+      .ccard li .ck {
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.22);
+        display: grid;
+        place-items: center;
+        flex: none;
+      }
+      .ccard li .ck .ic {
+        width: 16px;
+        height: 16px;
+        stroke-width: 3;
+      }
+
+      ol.nums {
+        list-style: none;
+        display: flex;
+        flex-direction: column;
+      }
+      ol.nums li {
+        display: flex;
+        align-items: center;
+        gap: clamp(16px, 2.4vw, 32px);
+        padding: clamp(6px, 1.3vh, 14px) 0;
+        border-bottom: 1px solid var(--line);
+      }
+      ol.nums li:last-child {
+        border-bottom: 0;
+      }
+      ol.nums .n {
+        font-family: Poppins, Inter, sans-serif;
+        font-weight: 700;
+        font-size: clamp(2.4rem, min(5.4vw, 8.6vh), 5rem);
+        line-height: 1;
+        color: var(--indigo);
+        min-width: 1.05em;
+        text-align: center;
+      }
+      ol.nums .t {
+        font-weight: 600;
+        color: #1e293b;
+        font-size: clamp(1.1rem, min(2.2vw, 3.6vh), 1.75rem);
+        line-height: 1.25;
+      }
+
+      .final-h {
+        font-family: Poppins, Inter, sans-serif;
+        font-size: var(--t-h);
+        font-weight: 700;
+        line-height: 1.1;
+        letter-spacing: -0.02em;
+        color: #fff;
+        max-width: 17ch;
+        text-wrap: balance;
+      }
+      .final-sub {
+        font-size: clamp(1.15rem, min(2.4vw, 3.9vh), 1.9rem);
+        font-weight: 500;
+        color: rgba(255, 255, 255, 0.92);
+      }
+      .term-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        background: rgba(255, 255, 255, 0.16);
+        color: #fff;
+        font-weight: 600;
+        font-size: clamp(0.98rem, min(1.7vw, 2.9vh), 1.25rem);
+        padding: 0.65em 1.3em;
+        border-radius: 999px;
+      }
+      .dark .bgicon {
+        color: #fff;
+        opacity: 0.1;
+      }
+
+      .glossary {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: clamp(10px, 1.8vh, 18px) clamp(20px, 3vw, 40px);
+      }
+      .glossary .term {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        padding-bottom: clamp(8px, 1.6vh, 14px);
+        border-bottom: 1px solid var(--line);
+      }
+      .glossary .term .k {
+        font-weight: 700;
+        color: var(--ink);
+        font-size: clamp(0.98rem, min(1.6vw, 2.7vh), 1.25rem);
+      }
+      .glossary .term .d {
+        font-size: clamp(0.88rem, min(1.4vw, 2.3vh), 1.05rem);
+        color: var(--body);
+        font-weight: 500;
+      }
+
+      .logo-img {
+        height: clamp(38px, 5.5vh, 54px);
+        width: auto;
+        object-fit: contain;
+        flex: none;
+      }
+      .logo-img.lg {
+        height: clamp(52px, 7vh, 72px);
+      }
+      .dark-logo {
+        filter: brightness(0) invert(1);
+      }
+
+      .quiz-card {
+        cursor: default;
+      }
+      .quiz-card .opt {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 4px 10px;
+        border-radius: 10px;
+        transition: all 0.4s ease;
+        font-size: clamp(0.92rem, min(1.4vw, 2.4vh), 1.1rem);
+        color: var(--body);
+      }
+      .quiz-card .opt .bullet {
+        font-weight: 700;
+        color: var(--muted);
+        transition: color 0.3s;
+      }
+      .quiz-card .opt.correct {
+        background: rgba(34, 197, 94, 0.14);
+        color: #15803d;
+        font-weight: 700;
+      }
+      .quiz-card .opt.correct .bullet {
+        color: #15803d;
+      }
+      .quiz-card .opt.correct::after {
+        content: "✓";
+        margin-left: auto;
+        color: #15803d;
+        font-weight: 700;
+      }
+      .quiz-card .opt.wrong {
+        background: rgba(239, 68, 68, 0.08);
+        color: #b91c1c;
+        text-decoration: line-through;
+        opacity: 0.6;
+      }
+      .quiz-reveal-btn {
+        margin-top: 6px;
+        align-self: flex-start;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 14px;
+        border-radius: 999px;
+        border: 1.5px solid var(--indigo);
+        background: transparent;
+        color: var(--indigo);
+        font-family: Inter, sans-serif;
+        font-weight: 600;
+        font-size: 0.85rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+      .quiz-reveal-btn:hover {
+        background: var(--indigo);
+        color: #fff;
+      }
+      .quiz-reveal-btn.revealed {
+        background: #e5e7eb;
+        border-color: #9ca3af;
+        color: #6b7280;
+        cursor: default;
+      }
+
+      #bar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 4px;
+        z-index: 50;
+        background: rgba(99, 102, 241, 0.12);
+      }
+      #bar i {
+        display: block;
+        height: 100%;
+        width: 0;
+        background: linear-gradient(90deg, #6366f1, #ec4899, #6366f1);
+        background-size: 200% auto;
+        animation: shimmer 3s linear infinite;
+        border-radius: 0 4px 4px 0;
+        transition: width 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+      }
+
+      #counter {
+        position: fixed;
+        top: 16px;
+        right: 22px;
+        z-index: 50;
+        font-size: 0.85rem;
+        font-weight: 500;
+        color: var(--muted);
+        font-variant-numeric: tabular-nums;
+        transition: color 0.3s;
+      }
+      #counter b {
+        color: #475569;
+        font-weight: 600;
+        transition: color 0.3s;
+      }
+
+      .nav {
+        position: fixed;
+        bottom: 24px;
+        z-index: 50;
+        width: 52px;
+        height: 52px;
+        border-radius: 50%;
+        border: 0;
+        background: #fff;
+        color: var(--indigo);
+        box-shadow: var(--shadow);
+        display: grid;
+        place-items: center;
+        cursor: pointer;
+        transition:
+          transform 0.2s ease,
+          opacity 0.2s,
+          background 0.3s,
+          color 0.3s,
+          box-shadow 0.3s;
+      }
+      .nav:hover:not(:disabled) {
+        transform: scale(1.1);
+        box-shadow: 0 12px 32px rgba(99, 102, 241, 0.35);
+      }
+      .nav:disabled {
+        opacity: 0.35;
+        cursor: default;
+      }
+      .nav:focus-visible,
+      .dots button:focus-visible {
+        outline: 3px solid var(--indigo);
+        outline-offset: 3px;
+      }
+      #prev {
+        left: 24px;
+      }
+      #next {
+        right: 24px;
+      }
+
+      .dots {
+        position: fixed;
+        bottom: 41px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 50;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        max-width: 60vw;
+        overflow: hidden;
+      }
+      .dots button {
+        position: relative;
+        width: 6px;
+        height: 6px;
+        padding: 0;
+        border: 0;
+        border-radius: 50%;
+        background: #c7cde0;
+        cursor: pointer;
+        transition:
+          width 0.25s ease,
+          height 0.25s ease,
+          background 0.25s ease;
+      }
+      .dots button::before {
+        content: "";
+        position: absolute;
+        inset: -8px;
+      }
+      .dots button.on {
+        width: 12px;
+        height: 12px;
+        background: var(--indigo);
+      }
+
+      body.dark-ui #bar {
+        background: rgba(255, 255, 255, 0.15);
+      }
+      body.dark-ui #counter {
+        color: rgba(255, 255, 255, 0.65);
+      }
+      body.dark-ui #counter b {
+        color: #fff;
+      }
+      body.dark-ui .nav {
+        background: rgba(255, 255, 255, 0.18);
+        color: #fff;
+        box-shadow: none;
+      }
+      body.dark-ui .dots button {
+        background: rgba(255, 255, 255, 0.4);
+      }
+      body.dark-ui .dots button.on {
+        background: #fff;
+      }
+      body.dark-ui .nav:focus-visible,
+      body.dark-ui .dots button:focus-visible {
+        outline-color: #fff;
+      }
+
+      @media (max-width: 820px) {
+        .split {
+          display: flex;
+          flex-direction: column;
+          align-items: stretch;
+          gap: clamp(14px, 2.4vh, 24px);
+        }
+        .grid4 {
+          grid-template-columns: 1fr 1fr;
+        }
+        .grid3 {
+          grid-template-columns: 1fr;
+        }
+        .panels,
+        .duo,
+        .glossary {
+          grid-template-columns: 1fr;
+        }
+        .flow {
+          grid-template-columns: 1fr;
+        }
+        .arrow-chip {
+          transform: rotate(90deg);
+          justify-self: center;
+          width: 40px;
+          height: 40px;
+        }
+        .nav {
+          width: 44px;
+          height: 44px;
+          bottom: 20px;
+        }
+        #prev {
+          left: 14px;
+        }
+        #next {
+          right: 14px;
+        }
+        .dots {
+          gap: 4px;
+          bottom: 36px;
+        }
+        .dots button {
+          width: 5px;
+          height: 5px;
+        }
+        .dots button.on {
+          width: 9px;
+          height: 9px;
+        }
+        h2 {
+          max-width: none;
+        }
+        th,
+        td {
+          padding-left: 14px;
+          padding-right: 14px;
+        }
+        .folder-vis {
+          flex-direction: row;
+          flex-wrap: wrap;
+          justify-content: flex-start;
+        }
+      }
+
+      @keyframes fadeUp {
+        from {
+          opacity: 0;
+          transform: translateY(28px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+        }
+        to {
+          opacity: 1;
+        }
+      }
+      @keyframes scaleIn {
+        from {
+          opacity: 0;
+          transform: scale(0.85);
+        }
+        to {
+          opacity: 1;
+          transform: scale(1);
+        }
+      }
+      @keyframes slideInLeft {
+        from {
+          opacity: 0;
+          transform: translateX(-40px);
+        }
+        to {
+          opacity: 1;
+          transform: translateX(0);
+        }
+      }
+      @keyframes slideInRight {
+        from {
+          opacity: 0;
+          transform: translateX(40px);
+        }
+        to {
+          opacity: 1;
+          transform: translateX(0);
+        }
+      }
+      @keyframes popIn {
+        0% {
+          opacity: 0;
+          transform: scale(0.6);
+        }
+        60% {
+          opacity: 1;
+          transform: scale(1.08);
+        }
+        100% {
+          opacity: 1;
+          transform: scale(1);
+        }
+      }
+      @keyframes drawLine {
+        from {
+          transform: scaleX(0);
+        }
+        to {
+          transform: scaleX(1);
+        }
+      }
+      @keyframes float {
+        0%,
+        100% {
+          transform: translate(-50%, -50%) scale(1);
+        }
+        50% {
+          transform: translate(-50%, -50%) scale(1.06);
+        }
+      }
+      @keyframes shimmer {
+        0% {
+          background-position: -200% center;
+        }
+        100% {
+          background-position: 200% center;
+        }
+      }
+      @keyframes pulseGlow {
+        0%,
+        100% {
+          box-shadow: 0 8px 24px rgba(99, 102, 241, 0.35);
+        }
+        50% {
+          box-shadow: 0 8px 40px rgba(99, 102, 241, 0.65);
+        }
+      }
+      @keyframes gradientShift {
+        0%,
+        100% {
+          background-position: 0% 50%;
+        }
+        50% {
+          background-position: 100% 50%;
+        }
+      }
+
+      .bg-title,
+      .bg-final {
+        background-size: 200% 200% !important;
+        animation: gradientShift 12s ease-in-out infinite;
+      }
+      .slide::before {
+        animation: float 14s ease-in-out infinite;
+      }
+      .bgicon {
+        animation: float 18s ease-in-out infinite;
+      }
+      .arrow-chip {
+        animation: pulseGlow 2.4s ease-in-out infinite;
+      }
+
+      .slide .anim {
+        opacity: 0;
+      }
+      .slide.active .anim {
+        opacity: 1;
+      }
+      .slide.active .anim {
+        animation-duration: 0.7s;
+        animation-fill-mode: both;
+        animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+        animation-delay: calc(var(--d, 0) * 1ms);
+      }
+      .slide.active .fade-up {
+        animation-name: fadeUp;
+      }
+      .slide.active .fade-in {
+        animation-name: fadeIn;
+      }
+      .slide.active .scale-in {
+        animation-name: scaleIn;
+      }
+      .slide.active .slide-l {
+        animation-name: slideInLeft;
+      }
+      .slide.active .slide-r {
+        animation-name: slideInRight;
+      }
+      .slide.active .pop-in {
+        animation-name: popIn;
+        animation-duration: 0.9s;
+      }
+
+      .title-h {
+        background: linear-gradient(
+          120deg,
+          #ffffff 20%,
+          #c7d2fe 50%,
+          #ffffff 80%
+        );
+        background-size: 200% auto;
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        animation: shimmer 6s linear infinite;
+      }
+
+      .head .kicker-row {
+        position: relative;
+        padding-bottom: 6px;
+      }
+      .head .kicker-row::after {
+        content: "";
+        display: block;
+        position: absolute;
+        bottom: -6px;
+        left: 0;
+        height: 2px;
+        width: 44px;
+        background: var(--indigo);
+        transform-origin: left;
+        transform: scaleX(0);
+        border-radius: 2px;
+      }
+      .slide.active .head .kicker-row::after {
+        animation: drawLine 0.8s 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
+      }
+
+      .slide.active .quote {
+        animation: slideInLeft 0.7s 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+      }
+      .slide.active .pill {
+        animation: popIn 0.7s 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+      }
+
+      .slide.active ol.nums .n {
+        animation: popIn 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+      }
+      .slide.active ol.nums li:nth-child(1) .n {
+        animation-delay: 0.2s;
+      }
+      .slide.active ol.nums li:nth-child(2) .n {
+        animation-delay: 0.32s;
+      }
+      .slide.active ol.nums li:nth-child(3) .n {
+        animation-delay: 0.44s;
+      }
+      .slide.active ol.nums li:nth-child(4) .n {
+        animation-delay: 0.56s;
+      }
+      .slide.active ol.nums li:nth-child(5) .n {
+        animation-delay: 0.68s;
+      }
+
+      .slide.active ol.nums .t {
+        animation: fadeUp 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+      }
+      .slide.active ol.nums li:nth-child(1) .t {
+        animation-delay: 0.3s;
+      }
+      .slide.active ol.nums li:nth-child(2) .t {
+        animation-delay: 0.42s;
+      }
+      .slide.active ol.nums li:nth-child(3) .t {
+        animation-delay: 0.54s;
+      }
+      .slide.active ol.nums li:nth-child(4) .t {
+        animation-delay: 0.66s;
+      }
+      .slide.active ol.nums li:nth-child(5) .t {
+        animation-delay: 0.78s;
+      }
+
+      .dots button.on {
+        animation: pulseGlow 2s ease-in-out infinite;
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+          animation: none !important;
+          transition: none !important;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <svg
+      width="0"
+      height="0"
+      style="position: absolute"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <defs>
+        <symbol id="i-database" viewBox="0 0 24 24">
+          <ellipse cx="12" cy="5" rx="9" ry="3" />
+          <path d="M3 5V19A9 3 0 0 0 21 19V5" />
+          <path d="M3 12A9 3 0 0 0 21 12" />
+        </symbol>
+        <symbol id="i-search" viewBox="0 0 24 24">
+          <circle cx="11" cy="11" r="8" />
+          <path d="m21 21-4.3-4.3" />
+        </symbol>
+        <symbol id="i-folder" viewBox="0 0 24 24">
+          <path
+            d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"
+          />
+        </symbol>
+        <symbol id="i-file" viewBox="0 0 24 24">
+          <path
+            d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"
+          />
+          <path d="M14 2v4a2 2 0 0 0 2 2h4" />
+          <path d="M10 9H8" />
+          <path d="M16 13H8" />
+          <path d="M16 17H8" />
+        </symbol>
+        <symbol id="i-terminal" viewBox="0 0 24 24">
+          <polyline points="4 17 10 11 4 5" />
+          <line x1="12" x2="20" y1="19" y2="19" />
+        </symbol>
+        <symbol id="i-cpu" viewBox="0 0 24 24">
+          <rect x="4" y="4" width="16" height="16" rx="2" />
+          <rect x="9" y="9" width="6" height="6" />
+          <path d="M15 2v2" />
+          <path d="M15 20v2" />
+          <path d="M2 15h2" />
+          <path d="M2 9h2" />
+          <path d="M20 15h2" />
+          <path d="M20 9h2" />
+          <path d="M9 2v2" />
+          <path d="M9 20v2" />
+        </symbol>
+        <symbol id="i-package" viewBox="0 0 24 24">
+          <path d="m7.5 4.27 9 5.15" />
+          <path
+            d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"
+          />
+          <path d="m3.3 7 8.7 5 8.7-5" />
+          <path d="M12 22V12" />
+        </symbol>
+        <symbol id="i-coffee" viewBox="0 0 24 24">
+          <path d="M10 2v2" />
+          <path d="M14 2v2" />
+          <path
+            d="M16 8a1 1 0 0 1 1 1v8a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4V9a1 1 0 0 1 1-1h14a4 4 0 1 1 0 8h-1"
+          />
+          <path d="M6 2v2" />
+        </symbol>
+        <symbol id="i-smile" viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="10" />
+          <path d="M8 14s1.5 2 4 2 4-2 4-2" />
+          <line x1="9" x2="9.01" y1="9" y2="9" />
+          <line x1="15" x2="15.01" y1="9" y2="9" />
+        </symbol>
+        <symbol id="i-trending" viewBox="0 0 24 24">
+          <polyline points="22 7 13.5 15.5 8.5 10.5 2 17" />
+          <polyline points="16 7 22 7 22 13" />
+        </symbol>
+        <symbol id="i-table" viewBox="0 0 24 24">
+          <path d="M12 3v18" />
+          <rect x="3" y="3" width="18" height="18" rx="2" />
+          <path d="M3 9h18" />
+          <path d="M3 15h18" />
+        </symbol>
+        <symbol id="i-layers" viewBox="0 0 24 24">
+          <path
+            d="m12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z"
+          />
+          <path d="m22 17.65-9.17 4.16a2 2 0 0 1-1.66 0L2 17.65" />
+          <path d="m22 12.65-9.17 4.16a2 2 0 0 1-1.66 0L2 12.65" />
+        </symbol>
+        <symbol id="i-branch" viewBox="0 0 24 24">
+          <line x1="6" x2="6" y1="3" y2="15" />
+          <circle cx="18" cy="6" r="3" />
+          <circle cx="6" cy="18" r="3" />
+          <path d="M18 9a9 9 0 0 1-9 9" />
+        </symbol>
+        <symbol id="i-braces" viewBox="0 0 24 24">
+          <path
+            d="M8 3H7a2 2 0 0 0-2 2v5a2 2 0 0 1-2 2 2 2 0 0 1 2 2v5c0 1.1.9 2 2 2h1"
+          />
+          <path
+            d="M16 21h1a2 2 0 0 0 2-2v-5c0-1.1.9-2 2-2a2 2 0 0 1-2-2V5a2 2 0 0 0-2-2h-1"
+          />
+        </symbol>
+        <symbol id="i-refresh" viewBox="0 0 24 24">
+          <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" />
+          <path d="M21 3v5h-5" />
+          <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" />
+          <path d="M8 16H3v5" />
+        </symbol>
+        <symbol id="i-ban" viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="10" />
+          <path d="m4.9 4.9 14.2 14.2" />
+        </symbol>
+        <symbol id="i-zap" viewBox="0 0 24 24">
+          <path
+            d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"
+          />
+        </symbol>
+        <symbol id="i-merge" viewBox="0 0 24 24">
+          <circle cx="18" cy="18" r="3" />
+          <circle cx="6" cy="6" r="3" />
+          <path d="M6 21V9a9 9 0 0 0 9 9" />
+        </symbol>
+        <symbol id="i-compass" viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="10" />
+          <polygon
+            points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"
+          />
+        </symbol>
+        <symbol id="i-checks" viewBox="0 0 24 24">
+          <path d="m3 17 2 2 4-4" />
+          <path d="m3 7 2 2 4-4" />
+          <path d="M13 6h8" />
+          <path d="M13 12h8" />
+          <path d="M13 18h8" />
+        </symbol>
+        <symbol id="i-check" viewBox="0 0 24 24">
+          <path d="M20 6 9 17l-5-5" />
+        </symbol>
+        <symbol id="i-pin" viewBox="0 0 24 24">
+          <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
+          <circle cx="12" cy="10" r="3" />
+        </symbol>
+        <symbol id="i-help" viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="10" />
+          <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+          <path d="M12 17h.01" />
+        </symbol>
+        <symbol id="i-arrow-right" viewBox="0 0 24 24">
+          <path d="M5 12h14" />
+          <path d="m12 5 7 7-7 7" />
+        </symbol>
+        <symbol id="i-left" viewBox="0 0 24 24">
+          <path d="m15 18-6-6 6-6" />
+        </symbol>
+        <symbol id="i-right" viewBox="0 0 24 24">
+          <path d="m9 18 6-6-6-6" />
+        </symbol>
+        <symbol id="i-book" viewBox="0 0 24 24">
+          <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+          <path
+            d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"
+          />
+        </symbol>
+        <symbol id="i-code" viewBox="0 0 24 24">
+          <polyline points="16 18 22 12 16 6" />
+          <polyline points="8 6 2 12 8 18" />
+        </symbol>
+        <symbol id="i-alert" viewBox="0 0 24 24">
+          <path
+            d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"
+          />
+          <path d="M12 9v4" />
+          <path d="M12 17h.01" />
+        </symbol>
+        <symbol id="i-box" viewBox="0 0 24 24">
+          <path
+            d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"
+          />
+          <path d="m3.3 7 8.7 5 8.7-5" />
+          <path d="M12 22V12" />
+        </symbol>
+        <symbol id="i-globe" viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="10" />
+          <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20" />
+          <path d="M2 12h20" />
+        </symbol>
+        <symbol id="i-key" viewBox="0 0 24 24">
+          <circle cx="7.5" cy="15.5" r="5.5" />
+          <path d="m21 2-9.6 9.6" />
+          <path d="m15.5 7.5 3 3L22 7l-3-3" />
+        </symbol>
+        <symbol id="i-grid" viewBox="0 0 24 24">
+          <rect x="3" y="3" width="7" height="7" />
+          <rect x="14" y="3" width="7" height="7" />
+          <rect x="14" y="14" width="7" height="7" />
+          <rect x="3" y="14" width="7" height="7" />
+        </symbol>
+        <symbol id="i-network" viewBox="0 0 24 24">
+          <rect x="16" y="16" width="6" height="6" rx="1" />
+          <rect x="2" y="16" width="6" height="6" rx="1" />
+          <rect x="9" y="2" width="6" height="6" rx="1" />
+          <path d="M5 16v-3a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v3" />
+          <path d="M12 12V8" />
+        </symbol>
+      </defs>
+    </svg>
+
+    <div id="bar" aria-hidden="true"><i></i></div>
+    <div id="counter" aria-live="polite"></div>
+
+    <main id="deck">
+      <!-- 1. Title -->
+      <section class="slide bg-title dark active" aria-label="Slide 1">
+        <div class="gridpat"></div>
+        <div class="inner center">
+          <div class="title-wrap">
+            <div class="kicker-row anim fade-up" style="--d: 100">
+              <span class="kicker">Lecture</span>
+            </div>
+            <h1 class="title-h anim scale-in" style="--d: 300">
+              Hive &amp; NoSQL
+            </h1>
+            <p class="title-sub anim fade-up" style="--d: 700">
+              Building a Data Warehouse on Big Data
+            </p>
+            <p class="foot anim fade-in" style="--d: 1100">
+              Big Data – FI-GLAL-SE5
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- 2. Where We Are -->
+      <section class="slide bg-a" aria-label="Slide 2">
+        <div class="inner">
+          <div class="split">
+            <div class="col l6">
+              <div class="head anim fade-up" style="--d: 100">
+                <div class="kicker-row">
+                  <span class="chip"
+                    ><svg class="ic"><use href="#i-pin" /></svg></span
+                  ><span class="kicker">Recap</span>
+                </div>
+                <h2>Where We Are</h2>
+              </div>
+              <p class="anim fade-up" style="--d: 400">
+                <b>Last session:</b> HDFS → store.
+              </p>
+              <p class="anim fade-up" style="--d: 500">
+                <b>This session:</b> Hive &amp; NoSQL → query.
+              </p>
+            </div>
+            <div class="col r6">
+              <div class="card row anim slide-r" style="--d: 500">
+                <span class="chip lg"
+                  ><svg class="ic"><use href="#i-database" /></svg
+                ></span>
+                <div>
+                  <span class="tag">Last session</span>
+                  <div class="ttl">HDFS storage</div>
+                  <div class="sub">Store big data</div>
+                </div>
+              </div>
+              <div class="card row anim slide-r" style="--d: 650">
+                <span class="chip lg pink"
+                  ><svg class="ic"><use href="#i-search" /></svg
+                ></span>
+                <div>
+                  <span class="tag">This session</span>
+                  <div class="ttl">Hive query</div>
+                  <div class="sub">Ask questions of it</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <p class="quote">
+            "Storing is not enough. We need to ask questions."
+          </p>
+        </div>
+      </section>
+
+      <!-- 3. The Problem -->
+      <section class="slide bg-b" aria-label="Slide 3">
+        <div class="inner">
+          <div class="split">
+            <div class="col l7">
+              <div class="head anim fade-up" style="--d: 100">
+                <div class="kicker-row">
+                  <span class="chip pink"
+                    ><svg class="ic"><use href="#i-folder" /></svg></span
+                  ><span class="kicker">The problem</span>
+                </div>
+                <h2 class="anim scale-in" style="--d: 250">
+                  Data on HDFS = just files.
+                </h2>
+              </div>
+              <p class="anim fade-up" style="--d: 400">
+                Querying required <b>Java MapReduce</b> → complex.
+              </p>
+              <div class="qbox anim pop-in" style="--d: 600">
+                <svg class="ic" style="width: 30px; height: 30px">
+                  <use href="#i-help" /></svg
+                >How can we query big data easily?
+              </div>
+            </div>
+            <div class="col r5">
+              <div class="folder-vis">
+                <div class="folder-big anim scale-in" style="--d: 450">
+                  <svg class="ic"><use href="#i-folder" /></svg
+                  ><span class="badge-q">?</span>
+                </div>
+                <div class="files">
+                  <span class="file anim fade-up" style="--d: 700"
+                    ><svg class="ic"><use href="#i-file" /></svg
+                    >part-00000</span
+                  >
+                  <span class="file anim fade-up" style="--d: 800"
+                    ><svg class="ic"><use href="#i-file" /></svg
+                    >part-00001</span
+                  >
+                  <span class="file anim fade-up" style="--d: 900"
+                    ><svg class="ic"><use href="#i-file" /></svg
+                    >part-00002</span
+                  >
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 4. A bit of history -->
+      <section class="slide bg-c" aria-label="Slide 4">
+        <div class="inner">
+          <div class="head anim fade-up" style="--d: 100">
+            <div class="kicker-row">
+              <span class="chip"
+                ><svg class="ic"><use href="#i-book" /></svg></span
+              ><span class="kicker">History</span>
+            </div>
+            <h2 class="anim scale-in" style="--d: 250">A bit of history</h2>
+          </div>
+          <div class="panels">
+            <div class="panel anim slide-l" style="--d: 400">
+              <div class="ph i">
+                <img
+                  src="logos/hive.svg"
+                  alt="Hive"
+                  class="logo-img dark-logo"
+                  style="height: 36px"
+                />Apache Hive
+              </div>
+              <table>
+                <tr>
+                  <th>Created by</th>
+                  <td>Facebook</td>
+                </tr>
+                <tr>
+                  <th>Year</th>
+                  <td>2008 (open-sourced 2010)</td>
+                </tr>
+                <tr>
+                  <th>Why</th>
+                  <td>Analysts needed SQL, not Java</td>
+                </tr>
+                <tr>
+                  <th>Maintained by</th>
+                  <td>Apache Software Foundation</td>
+                </tr>
+                <tr>
+                  <th>Status</th>
+                  <td>Active (v4.x)</td>
+                </tr>
+              </table>
+            </div>
+            <div class="panel anim slide-r" style="--d: 500">
+              <div class="ph p">
+                <img
+                  src="logos/mongodb.svg"
+                  alt="MongoDB"
+                  class="logo-img dark-logo"
+                  style="height: 36px"
+                />NoSQL / MongoDB
+              </div>
+              <table>
+                <tr>
+                  <th>Created by</th>
+                  <td>10gen (now MongoDB Inc.)</td>
+                </tr>
+                <tr>
+                  <th>Year</th>
+                  <td>2009</td>
+                </tr>
+                <tr>
+                  <th>Why</th>
+                  <td>Flexible, fast, web-scale apps</td>
+                </tr>
+                <tr>
+                  <th>Maintained by</th>
+                  <td>MongoDB Inc. (open source)</td>
+                </tr>
+                <tr>
+                  <th>Status</th>
+                  <td>Active (v7.x)</td>
+                </tr>
+              </table>
+            </div>
+          </div>
+          <p class="quote">Both born from the same era: internet-scale data.</p>
+        </div>
+      </section>
+
+      <!-- 5. How Hive fits in Hadoop -->
+      <section class="slide bg-a" aria-label="Slide 5">
+        <div class="inner">
+          <div class="head anim fade-up" style="--d: 100">
+            <div class="kicker-row">
+              <span class="chip"
+                ><svg class="ic"><use href="#i-network" /></svg></span
+              ><span class="kicker">Context</span>
+            </div>
+            <h2 class="anim scale-in" style="--d: 250">
+              How Hive fits in Hadoop
+            </h2>
+          </div>
+
+          <p class="anim fade-up" style="--d: 350">
+            Hadoop is a <b>stack of layers</b>. Each layer does one job.
+            <b>Hive sits at the top</b> — it gives you a way to
+            <b>ask questions</b> in SQL.
+          </p>
+
+          <div class="col" style="gap: clamp(8px, 1.6vh, 14px)">
+            <div
+              class="card row anim slide-l"
+              style="--d: 450; border-left: 4px solid var(--indigo)"
+            >
+              <img src="logos/hive.svg" alt="Hive" class="logo-img" />
+              <div style="flex: 1">
+                <div class="ttl">Query Layer — Hive</div>
+                <div class="sub">
+                  You write SQL here. This is what you interact with.
+                </div>
+              </div>
+            </div>
+
+            <div class="card row anim slide-l" style="--d: 550">
+              <img src="logos/hadoop.png" alt="Hadoop" class="logo-img" />
+              <div style="flex: 1">
+                <div class="ttl">Compute Layer — MapReduce / Tez</div>
+                <div class="sub">
+                  Takes the SQL, breaks it into parallel jobs.
+                </div>
+              </div>
+            </div>
+
+            <div class="card row anim slide-l" style="--d: 650">
+              <span class="chip lg"
+                ><svg class="ic"><use href="#i-cpu" /></svg
+              ></span>
+              <div style="flex: 1">
+                <div class="ttl">Resource Layer — YARN</div>
+                <div class="sub">Decides which machines run which jobs.</div>
+              </div>
+            </div>
+
+            <div class="card row anim slide-l" style="--d: 750">
+              <span class="chip lg"
+                ><svg class="ic"><use href="#i-database" /></svg
+              ></span>
+              <div style="flex: 1">
+                <div class="ttl">Storage Layer — HDFS</div>
+                <div class="sub">
+                  Stores the actual files across many machines.
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <p class="quote">
+            You use Hive (top). It uses everything underneath.
+          </p>
+        </div>
+      </section>
+
+      <!-- 6. What is Hive? -->
+      <section class="slide bg-b" aria-label="Slide 6">
+        <div class="inner">
+          <div class="head anim fade-up" style="--d: 100">
+            <div class="kicker-row">
+              <img
+                src="logos/hive.svg"
+                alt=""
+                class="logo-img"
+                style="height: 36px"
+              /><span class="kicker">Meet Hive</span>
+            </div>
+            <h2 class="anim scale-in" style="--d: 250; max-width: 22ch">
+              Hive = SQL on top of Hadoop
+            </h2>
+          </div>
+          <div class="grid2">
+            <div class="card row anim slide-l" style="--d: 400">
+              <span class="chip"
+                ><svg class="ic"><use href="#i-terminal" /></svg></span
+              ><b>SQL-like queries (HiveQL)</b>
+            </div>
+            <div class="card row anim slide-r" style="--d: 500">
+              <span class="chip"
+                ><svg class="ic"><use href="#i-cpu" /></svg></span
+              ><b>Distributed execution</b>
+            </div>
+            <div class="card row anim slide-l" style="--d: 600">
+              <span class="chip"
+                ><svg class="ic"><use href="#i-package" /></svg></span
+              ><b>Data stays on HDFS</b>
+            </div>
+            <div class="card row anim slide-r" style="--d: 700">
+              <span class="chip pink"
+                ><svg class="ic"><use href="#i-coffee" /></svg></span
+              ><b>No Java needed</b>
+            </div>
+          </div>
+          <div class="banner anim pop-in" style="--d: 900">
+            SQL + Big Data = Hive
+          </div>
+        </div>
+      </section>
+
+      <!-- 7. Inside Hive: 4 pieces -->
+      <section class="slide bg-c" aria-label="Slide 7">
+        <div class="inner">
+          <div class="head anim fade-up" style="--d: 100">
+            <div class="kicker-row">
+              <img
+                src="logos/hive.svg"
+                alt=""
+                class="logo-img"
+                style="height: 36px"
+              /><span class="kicker">Architecture</span>
+            </div>
+            <h2 class="anim scale-in" style="--d: 250">
+              Inside Hive: 4 pieces
+            </h2>
+          </div>
+
+          <p class="anim fade-up" style="--d: 350">
+            When you type a query, it passes through <b>four components</b>.
+            Let's follow the flow.
+          </p>
+
+          <div class="grid4">
+            <div class="card col anim slide-l" style="--d: 450">
+              <div style="display: flex; align-items: center; gap: 10px">
+                <span class="chip lg"
+                  ><svg class="ic"><use href="#i-terminal" /></svg
+                ></span>
+                <span class="kicker">Step 1</span>
+              </div>
+              <div class="ttl">Client</div>
+              <div class="sub">
+                You, in Beeline or a JDBC app. You send SQL text.
+              </div>
+            </div>
+
+            <div class="card col anim fade-up" style="--d: 550">
+              <div style="display: flex; align-items: center; gap: 10px">
+                <span class="chip lg"
+                  ><svg class="ic"><use href="#i-cpu" /></svg
+                ></span>
+                <span class="kicker">Step 2</span>
+              </div>
+              <div class="ttl">HiveServer2</div>
+              <div class="sub">
+                The "door." Receives queries, manages sessions.
+              </div>
+            </div>
+
+            <div class="card col anim fade-up" style="--d: 650">
+              <div style="display: flex; align-items: center; gap: 10px">
+                <span class="chip lg pink"
+                  ><svg class="ic"><use href="#i-table" /></svg
+                ></span>
+                <span class="kicker">Step 3</span>
+              </div>
+              <div class="ttl">Metastore</div>
+              <div class="sub">
+                The "catalog." Knows the tables, columns, partitions.
+              </div>
+            </div>
+
+            <div class="card col anim slide-r" style="--d: 750">
+              <div style="display: flex; align-items: center; gap: 10px">
+                <span class="chip lg"
+                  ><svg class="ic"><use href="#i-zap" /></svg
+                ></span>
+                <span class="kicker">Step 4</span>
+              </div>
+              <div class="ttl">Execution Engine</div>
+              <div class="sub">
+                Turns SQL into jobs (Tez / MapReduce) and runs them.
+              </div>
+            </div>
+          </div>
+
+          <div class="flow" style="margin-top: 8px">
+            <div class="card anim slide-l" style="--d: 850">
+              <span class="chip lg"
+                ><svg class="ic"><use href="#i-database" /></svg
+              ></span>
+              <div class="ttl">HDFS</div>
+              <div class="sub">
+                Where the data actually lives. The engine reads it.
+              </div>
+            </div>
+            <div class="arrow-chip anim scale-in" style="--d: 950">
+              <svg class="ic"><use href="#i-arrow-right" /></svg>
+            </div>
+            <div class="card anim slide-r" style="--d: 1000">
+              <span class="chip lg"
+                ><svg class="ic"><use href="#i-globe" /></svg
+              ></span>
+              <div class="ttl">Result</div>
+              <div class="sub">Comes back to you as a table.</div>
+            </div>
+          </div>
+
+          <p class="quote">
+            Client sends SQL → HiveServer routes it → Metastore gives structure
+            → Engine runs it on HDFS.
+          </p>
+        </div>
+      </section>
+
+      <!-- 8. Why Hive? -->
+      <section class="slide bg-a" aria-label="Slide 8">
+        <div class="inner">
+          <div class="head anim fade-up" style="--d: 100">
+            <div class="kicker-row">
+              <span class="chip"
+                ><svg class="ic"><use href="#i-zap" /></svg></span
+              ><span class="kicker">Why Hive</span>
+            </div>
+            <h2 class="anim scale-in" style="--d: 250">Why Hive?</h2>
+          </div>
+          <div class="grid4">
+            <div class="card col anim slide-l" style="--d: 400">
+              <span class="chip lg"
+                ><svg class="ic"><use href="#i-smile" /></svg
+              ></span>
+              <div class="ttl">Easy</div>
+              <div class="sub">Anyone who knows SQL</div>
+            </div>
+            <div class="card col anim fade-up" style="--d: 500">
+              <span class="chip lg"
+                ><svg class="ic"><use href="#i-trending" /></svg
+              ></span>
+              <div class="ttl">Scalable</div>
+              <div class="sub">Runs on the cluster</div>
+            </div>
+            <div class="card col anim fade-up" style="--d: 600">
+              <span class="chip lg"
+                ><svg class="ic"><use href="#i-table" /></svg
+              ></span>
+              <div class="ttl">Structured</div>
+              <div class="sub">Tables and types</div>
+            </div>
+            <div class="card col anim slide-r" style="--d: 700">
+              <span class="chip lg pink"
+                ><svg class="ic"><use href="#i-layers" /></svg
+              ></span>
+              <div class="ttl">Batch</div>
+              <div class="sub">For analytics and ETL</div>
+            </div>
+          </div>
+          <p class="quote">"Query terabytes with SQL."</p>
+        </div>
+      </section>
+
+      <!-- 9. Table = HDFS directory -->
+      <section class="slide bg-b" aria-label="Slide 9">
+        <div class="bgicon">
+          <svg class="ic"><use href="#i-folder" /></svg>
+        </div>
+        <div class="inner center">
+          <div class="kicker-row anim fade-up" style="--d: 200">
+            <span class="chip"
+              ><svg class="ic"><use href="#i-folder" /></svg></span
+            ><span class="kicker">Core idea</span>
+          </div>
+          <p class="huge anim scale-in" style="--d: 400">
+            Table = <span class="accent">HDFS directory</span>
+          </p>
+          <p class="gray anim fade-up" style="--d: 800">
+            Every Hive table is just a folder on HDFS.
+          </p>
+        </div>
+      </section>
+
+      <!-- 10. File Formats -->
+      <section class="slide bg-c" aria-label="Slide 10">
+        <div class="inner">
+          <div class="head anim fade-up" style="--d: 100">
+            <div class="kicker-row">
+              <span class="chip"
+                ><svg class="ic"><use href="#i-file" /></svg></span
+              ><span class="kicker">Storage</span>
+            </div>
+            <h2 class="anim scale-in" style="--d: 250">File formats in Hive</h2>
+          </div>
+          <div class="grid4">
+            <div class="card col anim slide-l" style="--d: 400">
+              <span class="chip lg"
+                ><svg class="ic"><use href="#i-file" /></svg
+              ></span>
+              <div class="ttl">Text</div>
+              <div class="sub">Human-readable. Simple. Slow.</div>
+            </div>
+            <div class="card col anim fade-up" style="--d: 500">
+              <span class="chip lg"
+                ><svg class="ic"><use href="#i-box" /></svg
+              ></span>
+              <div class="ttl">Parquet</div>
+              <div class="sub">Columnar. Compressed. Fast analytics.</div>
+            </div>
+            <div class="card col anim fade-up" style="--d: 600">
+              <span class="chip lg"
+                ><svg class="ic"><use href="#i-zap" /></svg
+              ></span>
+              <div class="ttl">ORC</div>
+              <div class="sub">Optimized row columnar. Hive-native.</div>
+            </div>
+            <div class="card col anim slide-r" style="--d: 700">
+              <span class="chip lg"
+                ><svg class="ic"><use href="#i-grid" /></svg
+              ></span>
+              <div class="ttl">Avro</div>
+              <div class="sub">Row-based. Schema evolution.</div>
+            </div>
+          </div>
+          <p class="quote">
+            For analytics: use Parquet or ORC. Avoid plain text at scale.
+          </p>
+        </div>
+      </section>
+
+      <!-- 11. What is a Partition? -->
+      <section class="slide bg-a" aria-label="Slide 11">
+        <div class="inner">
+          <div class="split">
+            <div class="col l5">
+              <div class="head anim fade-up" style="--d: 100">
+                <div class="kicker-row">
+                  <span class="chip"
+                    ><svg class="ic"><use href="#i-branch" /></svg></span
+                  ><span class="kicker">Partitioning</span>
+                </div>
+                <h2 class="anim scale-in" style="--d: 250">
+                  What is a Partition?
+                </h2>
+              </div>
+              <p class="anim fade-up" style="--d: 400">
+                Splitting a table into sub-folders by column value.
+              </p>
+            </div>
+            <div class="col r7">
+              <div class="code anim slide-r" style="--d: 500">
+                <div class="dots3"><i></i><i></i><i></i></div>
+                <div class="tree">
+                  <div class="tree-root">orders_partitioned/</div>
+                  <div class="tree-child">
+                    ├── <span class="fd">city=Tunis/</span>
+                  </div>
+                  <div class="tree-child">
+                    ├── <span class="fd">city=Sfax/</span>
+                  </div>
+                  <div class="tree-child">
+                    ├── <span class="fd">city=Sousse/</span>
+                  </div>
+                  <div class="tree-child">
+                    └── <span class="fd">city=Ariana/</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <span class="pill"
+            ><svg class="ic"><use href="#i-arrow-right" /></svg>Faster queries:
+            only read the needed folder</span
+          >
+        </div>
+      </section>
+
+      <!-- 12. What is Bucketing? -->
+      <section class="slide bg-b" aria-label="Slide 12">
+        <div class="inner">
+          <div class="split">
+            <div class="col l5">
+              <div class="head anim fade-up" style="--d: 100">
+                <div class="kicker-row">
+                  <span class="chip"
+                    ><svg class="ic"><use href="#i-grid" /></svg></span
+                  ><span class="kicker">Bucketing</span>
+                </div>
+                <h2 class="anim scale-in" style="--d: 250">
+                  What is Bucketing?
+                </h2>
+              </div>
+              <p class="anim fade-up" style="--d: 400">
+                Splitting data into a fixed number of files by a hash of a
+                column.
+              </p>
+              <p class="anim fade-up" style="--d: 500">
+                Mainly used to speed up <b>JOINs</b> and <b>sampling</b>.
+              </p>
+            </div>
+            <div class="col r7">
+              <div class="code anim slide-r" style="--d: 500">
+                <div class="dots3"><i></i><i></i><i></i></div>
+                <div class="sql-block">
+                  <div class="sql-line">
+                    <span class="kw">CREATE TABLE</span> orders_bucketed (
+                  </div>
+                  <div class="sql-line indent">
+                    order_id <span class="kw">INT</span>,
+                  </div>
+                  <div class="sql-line indent">
+                    customer <span class="kw">STRING</span>
+                  </div>
+                  <div class="sql-line">)</div>
+                  <div class="sql-line">
+                    <span class="kw">CLUSTERED BY</span> (order_id)
+                    <span class="kw">INTO</span>
+                    <span class="nu">4</span> BUCKETS;
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="grid2">
+            <div class="card row">
+              <span class="chip"
+                ><svg class="ic"><use href="#i-branch" /></svg></span
+              ><b>Partition = folder tree</b>
+            </div>
+            <div class="card row">
+              <span class="chip pink"
+                ><svg class="ic"><use href="#i-grid" /></svg></span
+              ><b>Bucket = hashed file inside</b>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 13. Limitations of Hive -->
+      <section class="slide bg-c" aria-label="Slide 13">
+        <div class="inner">
+          <div class="split">
+            <div class="col l5">
+              <div class="head anim fade-up" style="--d: 100">
+                <div class="kicker-row">
+                  <span class="chip pink"
+                    ><svg class="ic"><use href="#i-alert" /></svg></span
+                  ><span class="kicker">Caveats</span>
+                </div>
+                <h2 class="anim scale-in" style="--d: 250">
+                  Limitations of Hive
+                </h2>
+              </div>
+            </div>
+            <div class="col r7">
+              <div class="card row anim slide-r" style="--d: 400">
+                <span class="chip pink"
+                  ><svg class="ic"><use href="#i-ban" /></svg></span
+                ><b>Not for real-time queries</b>
+              </div>
+              <div class="card row anim slide-r" style="--d: 500">
+                <span class="chip pink"
+                  ><svg class="ic"><use href="#i-ban" /></svg></span
+                ><b>No fast row-level updates</b>
+              </div>
+              <div class="card row anim slide-r" style="--d: 600">
+                <span class="chip pink"
+                  ><svg class="ic"><use href="#i-ban" /></svg></span
+                ><b>Not for OLTP workloads</b>
+              </div>
+              <div class="card row anim slide-r" style="--d: 700">
+                <span class="chip pink"
+                  ><svg class="ic"><use href="#i-ban" /></svg></span
+                ><b>High latency per query</b>
+              </div>
+            </div>
+          </div>
+          <p class="quote">Hive is built for throughput, not for latency.</p>
+        </div>
+      </section>
+
+      <!-- 14. What is NoSQL? -->
+      <section class="slide bg-a" aria-label="Slide 14">
+        <div class="inner">
+          <div class="split">
+            <div class="col l5">
+              <div class="head anim fade-up" style="--d: 100">
+                <div class="kicker-row">
+                  <span class="chip pink"
+                    ><svg class="ic"><use href="#i-braces" /></svg></span
+                  ><span class="kicker">NoSQL</span>
+                </div>
+                <h2 class="anim scale-in" style="--d: 250">
+                  NoSQL = Not Only SQL
+                </h2>
+              </div>
+              <span class="pill pink">Popular: MongoDB</span>
+            </div>
+            <div class="col r7">
+              <div class="card row anim slide-r" style="--d: 400">
+                <span class="chip pink"
+                  ><svg class="ic"><use href="#i-refresh" /></svg></span
+                ><b>Flexible data</b>
+              </div>
+              <div class="card row anim slide-r" style="--d: 500">
+                <span class="chip pink"
+                  ><svg class="ic"><use href="#i-ban" /></svg></span
+                ><b>No fixed schema</b>
+              </div>
+              <div class="card row anim slide-r" style="--d: 600">
+                <span class="chip pink"
+                  ><svg class="ic"><use href="#i-zap" /></svg></span
+                ><b>Fast reads/writes</b>
+              </div>
+              <div class="card row anim slide-r" style="--d: 700">
+                <span class="chip pink"
+                  ><svg class="ic"><use href="#i-file" /></svg></span
+                ><b>JSON documents</b>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 15. The 4 Families of NoSQL -->
+      <section class="slide bg-b" aria-label="Slide 15">
+        <div class="inner">
+          <div class="head anim fade-up" style="--d: 100">
+            <div class="kicker-row">
+              <span class="chip pink"
+                ><svg class="ic"><use href="#i-grid" /></svg></span
+              ><span class="kicker">NoSQL families</span>
+            </div>
+            <h2 class="anim scale-in" style="--d: 250">
+              Four families of NoSQL
+            </h2>
+          </div>
+          <div class="grid4">
+            <div class="card col anim slide-l" style="--d: 400">
+              <span class="chip lg pink"
+                ><svg class="ic"><use href="#i-key" /></svg
+              ></span>
+              <div class="ttl">Key-Value</div>
+              <div class="sub">Redis, DynamoDB</div>
+            </div>
+            <div class="card col anim fade-up" style="--d: 500">
+              <span class="chip lg pink"
+                ><svg class="ic"><use href="#i-file" /></svg
+              ></span>
+              <div class="ttl">Document</div>
+              <div class="sub">MongoDB, CouchDB</div>
+            </div>
+            <div class="card col anim fade-up" style="--d: 600">
+              <span class="chip lg pink"
+                ><svg class="ic"><use href="#i-table" /></svg
+              ></span>
+              <div class="ttl">Column-family</div>
+              <div class="sub">HBase, Cassandra</div>
+            </div>
+            <div class="card col anim slide-r" style="--d: 700">
+              <span class="chip lg pink"
+                ><svg class="ic"><use href="#i-network" /></svg
+              ></span>
+              <div class="ttl">Graph</div>
+              <div class="sub">Neo4j, Neptune</div>
+            </div>
+          </div>
+          <p class="quote">Each family solves a different shape of problem.</p>
+        </div>
+      </section>
+
+      <!-- 16. MongoDB in One Example -->
+      <section class="slide bg-c" aria-label="Slide 16">
+        <div class="inner">
+          <div class="split">
+            <div class="col l5">
+              <div class="head anim fade-up" style="--d: 100">
+                <div class="kicker-row">
+                  <span class="chip pink"
+                    ><svg class="ic"><use href="#i-braces" /></svg></span
+                  ><span class="kicker">Example</span>
+                </div>
+                <h2 class="anim scale-in" style="--d: 250">
+                  MongoDB in one example
+                </h2>
+              </div>
+              <p class="anim fade-up" style="--d: 400">
+                A document is just a JSON object.
+              </p>
+              <p class="anim fade-up" style="--d: 500">
+                No schema. No migrations. Insert anything.
+              </p>
+            </div>
+            <div class="col r7">
+              <div class="code anim slide-r sm" style="--d: 500">
+                <div class="dots3"><i></i><i></i><i></i></div>
+                <div class="json-block">
+                  <div class="json-line">{</div>
+                  <div class="json-line indent">
+                    <span class="st">"order_id"</span>:
+                    <span class="nu">1001</span>,
+                  </div>
+                  <div class="json-line indent">
+                    <span class="st">"customer"</span>:
+                    <span class="st">"Ahmed"</span>,
+                  </div>
+                  <div class="json-line indent">
+                    <span class="st">"city"</span>:
+                    <span class="st">"Tunis"</span>,
+                  </div>
+                  <div class="json-line indent">
+                    <span class="st">"items"</span>: [
+                  </div>
+                  <div class="json-line indent2">
+                    { <span class="st">"product"</span>:
+                    <span class="st">"Laptop"</span>,
+                    <span class="st">"qty"</span>:
+                    <span class="nu">1</span> },
+                  </div>
+                  <div class="json-line indent2">
+                    { <span class="st">"product"</span>:
+                    <span class="st">"Mouse"</span>,
+                    <span class="st">"qty"</span>:
+                    <span class="nu">2</span> }
+                  </div>
+                  <div class="json-line indent">]</div>
+                  <div class="json-line">}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 17. Hive vs NoSQL -->
+      <section class="slide bg-a" aria-label="Slide 17">
+        <div class="inner">
+          <div class="head anim fade-up" style="--d: 100">
+            <div class="kicker-row">
+              <span class="chip"
+                ><svg class="ic"><use href="#i-table" /></svg></span
+              ><span class="kicker">Comparison</span>
+            </div>
+            <h2 class="anim scale-in" style="--d: 250">Hive vs NoSQL</h2>
+          </div>
+          <div class="panels">
+            <div class="panel anim slide-l" style="--d: 400">
+              <div class="ph i">
+                <img
+                  src="logos/hive.svg"
+                  alt="Hive"
+                  class="logo-img dark-logo"
+                  style="height: 36px"
+                />Hive
+              </div>
+              <table>
+                <tr>
+                  <th>Data</th>
+                  <td>Tables</td>
+                </tr>
+                <tr>
+                  <th>Schema</th>
+                  <td>Fixed</td>
+                </tr>
+                <tr>
+                  <th>Speed</th>
+                  <td>Batch</td>
+                </tr>
+                <tr>
+                  <th>Best for</th>
+                  <td>Analytics</td>
+                </tr>
+                <tr>
+                  <th>Size</th>
+                  <td>TB–PB</td>
+                </tr>
+              </table>
+            </div>
+            <div class="panel anim slide-r" style="--d: 500">
+              <div class="ph p">
+                <img
+                  src="logos/mongodb.svg"
+                  alt="MongoDB"
+                  class="logo-img dark-logo"
+                  style="height: 36px"
+                />NoSQL
+              </div>
+              <table>
+                <tr>
+                  <th>Data</th>
+                  <td>JSON</td>
+                </tr>
+                <tr>
+                  <th>Schema</th>
+                  <td>Flexible</td>
+                </tr>
+                <tr>
+                  <th>Speed</th>
+                  <td>Fast</td>
+                </tr>
+                <tr>
+                  <th>Best for</th>
+                  <td>Apps</td>
+                </tr>
+                <tr>
+                  <th>Size</th>
+                  <td>GB–TB</td>
+                </tr>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 18. They Work Together -->
+      <section class="slide bg-b" aria-label="Slide 18">
+        <div class="inner">
+          <div class="head anim fade-up" style="--d: 100">
+            <div class="kicker-row">
+              <span class="chip"
+                ><svg class="ic"><use href="#i-merge" /></svg></span
+              ><span class="kicker">Architecture</span>
+            </div>
+            <h2 class="anim scale-in" style="--d: 250; max-width: 22ch">
+              Real data warehouses are hybrid.
+            </h2>
+          </div>
+          <div class="flow">
+            <div class="card anim slide-l" style="--d: 400">
+              <span class="chip lg pink"
+                ><svg class="ic"><use href="#i-braces" /></svg
+              ></span>
+              <div class="ttl">NoSQL</div>
+              <div class="what">Landing zone</div>
+              <div class="sub">Raw, flexible</div>
+            </div>
+            <div class="arrow-chip anim scale-in" style="--d: 550">
+              <svg class="ic"><use href="#i-arrow-right" /></svg>
+            </div>
+            <div class="card anim slide-r" style="--d: 600">
+              <span class="chip lg"
+                ><svg class="ic"><use href="#i-layers" /></svg
+              ></span>
+              <div class="ttl">Hive</div>
+              <div class="what">Analytics</div>
+              <div class="sub">Structured, big queries</div>
+            </div>
+          </div>
+          <p class="quote">"NoSQL for flexibility. Hive for analysis."</p>
+        </div>
+      </section>
+
+      <!-- 19. Real-World Use Case -->
+      <section class="slide bg-c" aria-label="Slide 19">
+        <div class="inner">
+          <div class="head anim fade-up" style="--d: 100">
+            <div class="kicker-row">
+              <span class="chip"
+                ><svg class="ic"><use href="#i-globe" /></svg></span
+              ><span class="kicker">Use case</span>
+            </div>
+            <h2 class="anim scale-in" style="--d: 250">E-commerce pipeline</h2>
+          </div>
+
+          <p class="anim fade-up" style="--d: 350">
+            Imagine a Tunisian online shop. Every click and order has to be
+            <b>saved fast</b> and later <b>analyzed deeply</b>. Two different
+            jobs, two different tools.
+          </p>
+
+          <div class="grid4">
+            <div class="card col anim slide-l" style="--d: 450">
+              <span class="chip lg pink"
+                ><svg class="ic"><use href="#i-refresh" /></svg
+              ></span>
+              <div class="ttl">1. Capture</div>
+              <div class="sub">
+                Each order is written to <b>MongoDB</b> instantly — as JSON, no
+                schema required.
+              </div>
+            </div>
+            <div class="card col anim fade-up" style="--d: 550">
+              <span class="chip lg"
+                ><svg class="ic"><use href="#i-package" /></svg
+              ></span>
+              <div class="ttl">2. Dump</div>
+              <div class="sub">
+                Every night, raw orders are copied to <b>HDFS</b> — cheap, safe,
+                permanent.
+              </div>
+            </div>
+            <div class="card col anim fade-up" style="--d: 650">
+              <span class="chip lg"
+                ><svg class="ic"><use href="#i-table" /></svg
+              ></span>
+              <div class="ttl">3. Structure</div>
+              <div class="sub">
+                <b>Hive</b> reads the raw files, organizes them as tables,
+                partitioned by city.
+              </div>
+            </div>
+            <div class="card col anim slide-r" style="--d: 750">
+              <span class="chip lg"
+                ><svg class="ic"><use href="#i-trending" /></svg
+              ></span>
+              <div class="ttl">4. Analyze</div>
+              <div class="sub">
+                Analysts run <b>SQL</b> in Hive to produce dashboards and
+                reports.
+              </div>
+            </div>
+          </div>
+
+          <div class="grid2" style="margin-top: 8px">
+            <div class="card row anim slide-l" style="--d: 850">
+              <span class="chip lg pink"
+                ><svg class="ic"><use href="#i-zap" /></svg
+              ></span>
+              <div>
+                <div class="ttl">NoSQL = fast capture</div>
+                <div class="sub">
+                  Handles the live traffic. Writes are instant. Schema is
+                  flexible.
+                </div>
+              </div>
+            </div>
+            <div class="card row anim slide-r" style="--d: 950">
+              <span class="chip lg"
+                ><svg class="ic"><use href="#i-layers" /></svg
+              ></span>
+              <div>
+                <div class="ttl">Hive = deep analysis</div>
+                <div class="sub">
+                  Handles the heavy queries. Reads terabytes. Produces reports.
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <p class="quote">
+            Two jobs, two tools. NoSQL catches the data. Hive understands it.
+          </p>
+        </div>
+      </section>
+
+      <!-- 20. When to Use What? -->
+      <section class="slide bg-a" aria-label="Slide 20">
+        <div class="inner">
+          <div class="head anim fade-up" style="--d: 100">
+            <div class="kicker-row">
+              <span class="chip"
+                ><svg class="ic"><use href="#i-compass" /></svg></span
+              ><span class="kicker">Decision guide</span>
+            </div>
+            <h2 class="anim scale-in" style="--d: 250">When to Use What?</h2>
+          </div>
+          <div class="duo">
+            <div class="ccard i anim slide-l" style="--d: 400">
+              <h3>Use Hive when…</h3>
+              <ul>
+                <li>
+                  <span class="ck"
+                    ><svg class="ic"><use href="#i-check" /></svg></span
+                  >Big data
+                </li>
+                <li>
+                  <span class="ck"
+                    ><svg class="ic"><use href="#i-check" /></svg></span
+                  >Analytics
+                </li>
+                <li>
+                  <span class="ck"
+                    ><svg class="ic"><use href="#i-check" /></svg></span
+                  >SQL
+                </li>
+              </ul>
+            </div>
+            <div class="ccard p anim slide-r" style="--d: 500">
+              <h3>Use NoSQL when…</h3>
+              <ul>
+                <li>
+                  <span class="ck"
+                    ><svg class="ic"><use href="#i-check" /></svg></span
+                  >Flexible / JSON
+                </li>
+                <li>
+                  <span class="ck"
+                    ><svg class="ic"><use href="#i-check" /></svg></span
+                  >Speed
+                </li>
+                <li>
+                  <span class="ck"
+                    ><svg class="ic"><use href="#i-check" /></svg></span
+                  >Schema changes
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 21. Key Takeaways -->
+      <section class="slide bg-b" aria-label="Slide 21">
+        <div class="inner">
+          <div class="split">
+            <div class="col l5">
+              <div class="head anim fade-up" style="--d: 100">
+                <div class="kicker-row">
+                  <span class="chip"
+                    ><svg class="ic"><use href="#i-checks" /></svg></span
+                  ><span class="kicker">Summary</span>
+                </div>
+                <h2 class="anim scale-in" style="--d: 250">Key Takeaways</h2>
+              </div>
+            </div>
+            <div class="col r7">
+              <ol class="nums">
+                <li>
+                  <span class="n">1</span
+                  ><span class="t">Hive = SQL on Hadoop</span>
+                </li>
+                <li>
+                  <span class="n">2</span
+                  ><span class="t"
+                    >Table = directory, Partition = sub-folder</span
+                  >
+                </li>
+                <li>
+                  <span class="n">3</span
+                  ><span class="t"
+                    >Partitioning and bucketing = faster queries</span
+                  >
+                </li>
+                <li>
+                  <span class="n">4</span
+                  ><span class="t">NoSQL = flexible, fast, schema-free</span>
+                </li>
+                <li>
+                  <span class="n">5</span
+                  ><span class="t">Real warehouses combine both</span>
+                </li>
+              </ol>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 22. Glossary -->
+      <section class="slide bg-c" aria-label="Slide 22">
+        <div class="inner">
+          <div class="head anim fade-up" style="--d: 100">
+            <div class="kicker-row">
+              <span class="chip"
+                ><svg class="ic"><use href="#i-book" /></svg></span
+              ><span class="kicker">Reference</span>
+            </div>
+            <h2 class="anim scale-in" style="--d: 250">Glossary</h2>
+          </div>
+          <div class="glossary">
+            <div class="term anim fade-up" style="--d: 350">
+              <span class="k">HDFS</span
+              ><span class="d">Distributed file system for big data</span>
+            </div>
+            <div class="term anim fade-up" style="--d: 400">
+              <span class="k">Hive</span
+              ><span class="d">SQL-like query layer on Hadoop</span>
+            </div>
+            <div class="term anim fade-up" style="--d: 450">
+              <span class="k">HiveQL</span
+              ><span class="d">Hive's query language</span>
+            </div>
+            <div class="term anim fade-up" style="--d: 500">
+              <span class="k">Metastore</span
+              ><span class="d">Stores table schemas and partition info</span>
+            </div>
+            <div class="term anim fade-up" style="--d: 550">
+              <span class="k">Partition</span
+              ><span class="d">Sub-folder in a Hive table</span>
+            </div>
+            <div class="term anim fade-up" style="--d: 600">
+              <span class="k">Bucket</span
+              ><span class="d">Hashed file inside a partition</span>
+            </div>
+            <div class="term anim fade-up" style="--d: 650">
+              <span class="k">Parquet</span
+              ><span class="d">Columnar file format for analytics</span>
+            </div>
+            <div class="term anim fade-up" style="--d: 700">
+              <span class="k">NoSQL</span
+              ><span class="d">Non-relational, flexible databases</span>
+            </div>
+            <div class="term anim fade-up" style="--d: 750">
+              <span class="k">MongoDB</span
+              ><span class="d">Document-oriented NoSQL database</span>
+            </div>
+            <div class="term anim fade-up" style="--d: 800">
+              <span class="k">ETL</span
+              ><span class="d">Extract, Transform, Load</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 23. Behind the scenes -->
+      <section class="slide bg-a" aria-label="Slide 23">
+        <div class="inner">
+          <div class="head anim fade-up" style="--d: 100">
+            <div class="kicker-row">
+              <span class="chip"
+                ><svg class="ic"><use href="#i-cpu" /></svg></span
+              ><span class="kicker">Behind the scenes</span>
+            </div>
+            <h2 class="anim scale-in" style="--d: 250">
+              What happens when you type SQL
+            </h2>
+          </div>
+          <div class="grid4">
+            <div class="card col anim slide-l" style="--d: 400">
+              <span class="chip lg"
+                ><svg class="ic"><use href="#i-code" /></svg
+              ></span>
+              <div class="ttl">1. Parse</div>
+              <div class="sub">SQL becomes an abstract syntax tree</div>
+            </div>
+            <div class="card col anim fade-up" style="--d: 500">
+              <span class="chip lg"
+                ><svg class="ic"><use href="#i-layers" /></svg
+              ></span>
+              <div class="ttl">2. Plan</div>
+              <div class="sub">Build a logical plan, optimize it</div>
+            </div>
+            <div class="card col anim fade-up" style="--d: 600">
+              <span class="chip lg"
+                ><svg class="ic"><use href="#i-network" /></svg
+              ></span>
+              <div class="ttl">3. Compile</div>
+              <div class="sub">Translate to Tez / MapReduce DAG</div>
+            </div>
+            <div class="card col anim slide-r" style="--d: 700">
+              <span class="chip lg pink"
+                ><svg class="ic"><use href="#i-cpu" /></svg
+              ></span>
+              <div class="ttl">4. Execute</div>
+              <div class="sub">YARN runs tasks across the cluster</div>
+            </div>
+          </div>
+          <div class="code anim slide-r sm" style="--d: 850; margin-top: 6px">
+            <div class="dots3"><i></i><i></i><i></i></div>
+            <div class="log-block">
+              <div class="log-line cm">
+                // You see this in the logs when a query runs
+              </div>
+              <div class="log-line">
+                Status: Running (Executing on YARN cluster with App id
+                application_...)
+              </div>
+              <div class="log-line">
+                Map 1 ...... container SUCCEEDED 1 1
+              </div>
+              <div class="log-line">
+                Reducer 2 ... container SUCCEEDED 1 1
+              </div>
+              <div class="log-line">
+                DAG finished successfully in 0.80 seconds
+              </div>
+            </div>
+          </div>
+          <p class="quote">
+            Your SQL is not executed. It is translated, then distributed.
+          </p>
+        </div>
+      </section>
+
+      <!-- 24. Quiz — Hive -->
+      <section class="slide bg-b" aria-label="Slide 24">
+        <div class="inner">
+          <div class="head anim fade-up" style="--d: 100">
+            <div class="kicker-row">
+              <span class="chip"
+                ><svg class="ic"><use href="#i-help" /></svg></span
+              ><span class="kicker">Quiz · 1 / 3</span>
+            </div>
+            <h2 class="anim scale-in" style="--d: 250">Hive quiz</h2>
+          </div>
+          <div class="grid2">
+            <div
+              class="card col quiz-card anim fade-up"
+              data-correct="b"
+              style="--d: 350"
+            >
+              <div class="ttl">Q1. What does Hive do?</div>
+              <div class="opt" data-key="a">
+                <span class="bullet">a)</span> Store files on HDFS
+              </div>
+              <div class="opt" data-key="b">
+                <span class="bullet">b)</span> Translate SQL into distributed
+                jobs
+              </div>
+              <div class="opt" data-key="c">
+                <span class="bullet">c)</span> Replace Hadoop
+              </div>
+              <button class="quiz-reveal-btn">Show answer</button>
+            </div>
+            <div
+              class="card col quiz-card anim fade-up"
+              data-correct="b"
+              style="--d: 450"
+            >
+              <div class="ttl">Q2. A Hive table is…</div>
+              <div class="opt" data-key="a">
+                <span class="bullet">a)</span> A row in MySQL
+              </div>
+              <div class="opt" data-key="b">
+                <span class="bullet">b)</span> A folder on HDFS
+              </div>
+              <div class="opt" data-key="c">
+                <span class="bullet">c)</span> A JSON file
+              </div>
+              <button class="quiz-reveal-btn">Show answer</button>
+            </div>
+            <div
+              class="card col quiz-card anim fade-up"
+              data-correct="b"
+              style="--d: 550"
+            >
+              <div class="ttl">Q3. What is partition pruning?</div>
+              <div class="opt" data-key="a">
+                <span class="bullet">a)</span> Deleting old data
+              </div>
+              <div class="opt" data-key="b">
+                <span class="bullet">b)</span> Reading only the needed folder
+              </div>
+              <div class="opt" data-key="c">
+                <span class="bullet">c)</span> Compressing files
+              </div>
+              <button class="quiz-reveal-btn">Show answer</button>
+            </div>
+            <div
+              class="card col quiz-card anim fade-up"
+              data-correct="b"
+              style="--d: 650"
+            >
+              <div class="ttl">Q4. Is Hive good for real-time?</div>
+              <div class="opt" data-key="a">
+                <span class="bullet">a)</span> Yes
+              </div>
+              <div class="opt" data-key="b">
+                <span class="bullet">b)</span> No — batch only
+              </div>
+              <div class="opt" data-key="c">
+                <span class="bullet">c)</span> Only on weekends
+              </div>
+              <button class="quiz-reveal-btn">Show answer</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 25. Quiz — NoSQL -->
+      <section class="slide bg-c" aria-label="Slide 25">
+        <div class="inner">
+          <div class="head anim fade-up" style="--d: 100">
+            <div class="kicker-row">
+              <span class="chip pink"
+                ><svg class="ic"><use href="#i-help" /></svg></span
+              ><span class="kicker">Quiz · 2 / 3</span>
+            </div>
+            <h2 class="anim scale-in" style="--d: 250">NoSQL quiz</h2>
+          </div>
+          <div class="grid2">
+            <div
+              class="card col quiz-card anim fade-up"
+              data-correct="b"
+              style="--d: 350"
+            >
+              <div class="ttl">Q1. What does NoSQL mean?</div>
+              <div class="opt" data-key="a">
+                <span class="bullet">a)</span> No SQL at all
+              </div>
+              <div class="opt" data-key="b">
+                <span class="bullet">b)</span> Not Only SQL
+              </div>
+              <div class="opt" data-key="c">
+                <span class="bullet">c)</span> Not a database
+              </div>
+              <button class="quiz-reveal-btn">Show answer</button>
+            </div>
+            <div
+              class="card col quiz-card anim fade-up"
+              data-correct="b"
+              style="--d: 450"
+            >
+              <div class="ttl">Q2. MongoDB is a…</div>
+              <div class="opt" data-key="a">
+                <span class="bullet">a)</span> Key-value store
+              </div>
+              <div class="opt" data-key="b">
+                <span class="bullet">b)</span> Document database
+              </div>
+              <div class="opt" data-key="c">
+                <span class="bullet">c)</span> Graph database
+              </div>
+              <button class="quiz-reveal-btn">Show answer</button>
+            </div>
+            <div
+              class="card col quiz-card anim fade-up"
+              data-correct="b"
+              style="--d: 550"
+            >
+              <div class="ttl">Q3. Which is a NoSQL family?</div>
+              <div class="opt" data-key="a">
+                <span class="bullet">a)</span> Relational
+              </div>
+              <div class="opt" data-key="b">
+                <span class="bullet">b)</span> Column-family
+              </div>
+              <div class="opt" data-key="c">
+                <span class="bullet">c)</span> Hierarchical SQL
+              </div>
+              <button class="quiz-reveal-btn">Show answer</button>
+            </div>
+            <div
+              class="card col quiz-card anim fade-up"
+              data-correct="b"
+              style="--d: 650"
+            >
+              <div class="ttl">Q4. NoSQL shines when…</div>
+              <div class="opt" data-key="a">
+                <span class="bullet">a)</span> Schema is fixed
+              </div>
+              <div class="opt" data-key="b">
+                <span class="bullet">b)</span> Data is flexible / JSON
+              </div>
+              <div class="opt" data-key="c">
+                <span class="bullet">c)</span> You need transactions
+              </div>
+              <button class="quiz-reveal-btn">Show answer</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 26. Quiz — Mixed -->
+      <section class="slide bg-a" aria-label="Slide 26">
+        <div class="inner">
+          <div class="head anim fade-up" style="--d: 100">
+            <div class="kicker-row">
+              <span class="chip"
+                ><svg class="ic"><use href="#i-compass" /></svg></span
+              ><span class="kicker">Quiz · 3 / 3</span>
+            </div>
+            <h2 class="anim scale-in" style="--d: 250">Hive vs NoSQL</h2>
+          </div>
+          <div class="grid2">
+            <div
+              class="card col quiz-card anim fade-up"
+              data-correct="a"
+              style="--d: 350"
+            >
+              <div class="ttl">Q1. Which runs SQL?</div>
+              <div class="opt" data-key="a">
+                <span class="bullet">a)</span> Hive
+              </div>
+              <div class="opt" data-key="b">
+                <span class="bullet">b)</span> MongoDB
+              </div>
+              <div class="opt" data-key="c">
+                <span class="bullet">c)</span> Both
+              </div>
+              <button class="quiz-reveal-btn">Show answer</button>
+            </div>
+            <div
+              class="card col quiz-card anim fade-up"
+              data-correct="a"
+              style="--d: 450"
+            >
+              <div class="ttl">Q2. Which handles TB–PB best?</div>
+              <div class="opt" data-key="a">
+                <span class="bullet">a)</span> Hive
+              </div>
+              <div class="opt" data-key="b">
+                <span class="bullet">b)</span> MongoDB
+              </div>
+              <div class="opt" data-key="c">
+                <span class="bullet">c)</span> Neither
+              </div>
+              <button class="quiz-reveal-btn">Show answer</button>
+            </div>
+            <div
+              class="card col quiz-card anim fade-up"
+              data-correct="b"
+              style="--d: 550"
+            >
+              <div class="ttl">Q3. Which fits a landing zone?</div>
+              <div class="opt" data-key="a">
+                <span class="bullet">a)</span> Hive
+              </div>
+              <div class="opt" data-key="b">
+                <span class="bullet">b)</span> NoSQL
+              </div>
+              <div class="opt" data-key="c">
+                <span class="bullet">c)</span> Both equally
+              </div>
+              <button class="quiz-reveal-btn">Show answer</button>
+            </div>
+            <div
+              class="card col quiz-card anim fade-up"
+              data-correct="c"
+              style="--d: 650"
+            >
+              <div class="ttl">Q4. Real data warehouses…</div>
+              <div class="opt" data-key="a">
+                <span class="bullet">a)</span> Use Hive only
+              </div>
+              <div class="opt" data-key="b">
+                <span class="bullet">b)</span> Use NoSQL only
+              </div>
+              <div class="opt" data-key="c">
+                <span class="bullet">c)</span> Combine both
+              </div>
+              <button class="quiz-reveal-btn">Show answer</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 27. Hands-On -->
+      <section class="slide bg-final dark" aria-label="Slide 27">
+        <div class="bgicon">
+          <svg class="ic"><use href="#i-terminal" /></svg>
+        </div>
+        <div class="inner center">
+          <div class="kicker-row anim fade-up" style="--d: 200">
+            <img
+              src="logos/hive.svg"
+              alt="Hive"
+              class="logo-img lg dark-logo"
+            />
+            <span class="kicker">Hands-on</span>
+          </div>
+          <h2 class="final-h anim scale-in" style="--d: 400">
+            Now let's build a mini Data Warehouse with Hive.
+          </h2>
+          <p class="final-sub anim fade-up" style="--d: 800">
+            Dataset: Tunisian e-commerce orders
+          </p>
+          <span class="term-pill anim pop-in" style="--d: 1100"
+            ><svg class="ic"><use href="#i-terminal" /></svg>Open your terminal.
+            Let's go.</span
+          >
+        </div>
+      </section>
+    </main>
+
+    <button class="nav" id="prev" aria-label="Previous slide">
+      <svg class="ic"><use href="#i-left" /></svg>
+    </button>
+    <button class="nav" id="next" aria-label="Next slide">
+      <svg class="ic"><use href="#i-right" /></svg>
+    </button>
+    <div class="dots" id="dots" aria-label="Slide navigation"></div>
+
+    <script>
+      (function () {
+        var slides = Array.prototype.slice.call(
+          document.querySelectorAll(".slide"),
+        );
+        var total = slides.length;
+        var current = 0;
+
+        var bar = document.querySelector("#bar i");
+        var counter = document.getElementById("counter");
+        var prev = document.getElementById("prev");
+        var next = document.getElementById("next");
+        var dotsWrap = document.getElementById("dots");
+
+        var dots = slides.map(function (_, i) {
+          var b = document.createElement("button");
+          b.setAttribute("aria-label", "Go to slide " + (i + 1));
+          b.addEventListener("click", function () {
+            show(i);
+          });
+          dotsWrap.appendChild(b);
+          return b;
+        });
+
+        function animateCounter(el, target, total) {
+          var start = parseInt(el.dataset.current || "0", 10);
+          var dur = 320;
+          var t0 = performance.now();
+          function frame(t) {
+            var k = Math.min(1, (t - t0) / dur);
+            var eased = 1 - Math.pow(1 - k, 3);
+            var val = Math.round(start + (target - start) * eased);
+            el.innerHTML = "<b>" + val + "</b> / " + total;
+            if (k < 1) requestAnimationFrame(frame);
+            else el.dataset.current = String(target);
+          }
+          requestAnimationFrame(frame);
+        }
+
+        function show(n) {
+          n = Math.max(0, Math.min(total - 1, n));
+          current = n;
+
+          slides.forEach(function (s, i) {
+            var wasActive = s.classList.contains("active");
+            s.classList.toggle("active", i === n);
+            s.classList.toggle("past", i < n);
+            s.setAttribute("aria-hidden", i === n ? "false" : "true");
+            if (i === n && !wasActive) {
+              void s.offsetWidth;
+            }
+          });
+
+          dots.forEach(function (d, i) {
+            d.classList.toggle("on", i === n);
+            if (i === n) d.setAttribute("aria-current", "true");
+            else d.removeAttribute("aria-current");
+          });
+
+          bar.style.width = ((n + 1) / total) * 100 + "%";
+          animateCounter(counter, n + 1, total);
+
+          prev.disabled = n === 0;
+          next.disabled = n === total - 1;
+          document.body.classList.toggle(
+            "dark-ui",
+            slides[n].classList.contains("dark"),
+          );
+        }
+
+        prev.addEventListener("click", function () {
+          show(current - 1);
+        });
+        next.addEventListener("click", function () {
+          show(current + 1);
+        });
+
+        document.addEventListener("keydown", function (e) {
+          if (e.altKey || e.ctrlKey || e.metaKey) return;
+          var onButton =
+            document.activeElement &&
+            document.activeElement.tagName === "BUTTON";
+          switch (e.key) {
+            case "ArrowRight":
+            case "PageDown":
+              e.preventDefault();
+              show(current + 1);
+              break;
+            case "ArrowLeft":
+            case "PageUp":
+              e.preventDefault();
+              show(current - 1);
+              break;
+            case " ":
+              if (onButton) return;
+              e.preventDefault();
+              show(current + (e.shiftKey ? -1 : 1));
+              break;
+            case "Home":
+              e.preventDefault();
+              show(0);
+              break;
+            case "End":
+              e.preventDefault();
+              show(total - 1);
+              break;
+          }
+        });
+
+        var sx = null,
+          sy = null;
+        document.addEventListener(
+          "touchstart",
+          function (e) {
+            sx = e.touches[0].clientX;
+            sy = e.touches[0].clientY;
+          },
+          { passive: true },
+        );
+        document.addEventListener(
+          "touchend",
+          function (e) {
+            if (sx === null) return;
+            var dx = e.changedTouches[0].clientX - sx;
+            var dy = e.changedTouches[0].clientY - sy;
+            if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy))
+              show(current + (dx < 0 ? 1 : -1));
+            sx = sy = null;
+          },
+          { passive: true },
+        );
+
+        document.querySelectorAll(".quiz-card").forEach(function (card) {
+          var btn = card.querySelector(".quiz-reveal-btn");
+          if (!btn) return;
+          btn.addEventListener("click", function (e) {
+            e.stopPropagation();
+            if (card.classList.contains("answered")) return;
+            card.classList.add("answered");
+            var correct = card.dataset.correct;
+            card.querySelectorAll(".opt").forEach(function (opt) {
+              if (opt.dataset.key === correct) {
+                opt.classList.add("correct");
+              } else {
+                opt.classList.add("wrong");
+              }
+            });
+            btn.textContent = "Answer: " + correct.toUpperCase();
+            btn.classList.add("revealed");
+          });
+        });
+
+        show(0);
+      })();
+    </script>
+  </body>
+</html>
